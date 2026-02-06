@@ -1,25 +1,44 @@
-# Import the app factory
+# pytest is the testing framework used
+# Flask provides a test client to simulate requests
+import pytest
+
+# Import the app factory from main.py
 from main import create_app
 
 
-def test_health_endpoint():
+@pytest.fixture
+def client():
     """
-    This test verifies that the /health endpoint
-    returns a 200 status and expected JSON response.
+    This fixture creates a test client for the Flask application.
+    It runs before each test and provides a clean app instance.
     """
-
-    # Create Flask app instance
     app = create_app()
+    app.testing = True
 
-    # Use Flask test client
-    client = app.test_client()
+    # Flask provides a test client that does not require running a server
+    with app.test_client() as client:
+        yield client
 
-    # Send GET request to /health
+
+def test_health_endpoint(client):
+    """
+    Test that the /health endpoint:
+    - Returns HTTP 200
+    - Returns expected JSON keys and values
+    """
+
+    # Simulate a GET request to /health
     response = client.get("/health")
 
-    # Assert HTTP status code
+    # Verify HTTP status code
     assert response.status_code == 200
 
-    # Assert JSON response content
-    json_data = response.get_json()
-    assert json_data["status"] == "OK"
+    # Parse JSON response
+    data = response.get_json()
+
+    # Core health check
+    assert data["status"] == "OK"
+
+    # Application metadata checks
+    assert data["app"] == "AI Integration Automation Platform"
+    assert "environment" in data
