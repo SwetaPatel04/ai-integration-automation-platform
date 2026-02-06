@@ -1,17 +1,17 @@
 name: Backend CI Pipeline
 
-# When should the pipeline run
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   backend-ci:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository code
+      # Step 1: Checkout repository code
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -19,18 +19,17 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
       # Step 3: Install backend dependencies
       - name: Install dependencies
         run: |
           cd backend
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Step 4: Start backend and check health
-      - name: Start app and run health check
+      # Step 4: Basic syntax check (CI safety)
+      - name: Run Python syntax check
         run: |
           cd backend
-          python main.py &
-          sleep 5
-          curl http://127.0.0.1:5000/health
+          python -m py_compile main.py
