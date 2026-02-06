@@ -19,17 +19,15 @@ def test_webhook_external_trigger(client):
     Test POST /webhook/external-trigger endpoint.
     Validates:
     - Successful response
-    - Automation metadata
-    - External API data is included
+    - Agent-driven automation metadata
+    - Agent decision output
     """
 
-    # Sample webhook payload
     payload = {
         "source": "pytest",
         "trigger": "webhook-test"
     }
 
-    # Send POST request with JSON body
     response = client.post(
         "/webhook/external-trigger",
         json=payload
@@ -38,13 +36,11 @@ def test_webhook_external_trigger(client):
     # Verify HTTP response code
     assert response.status_code == 200
 
-    # Parse JSON response
     data = response.get_json()
 
-    # Validate automation metadata
-    assert data["automation"] == "webhook-triggered"
-    assert "event_log" in data
-    assert "external_data" in data
+    # Updated automation identifier
+    assert data["automation"] == "agent-driven-webhook"
 
-    # Validate payload reflection
-    assert data["event_log"]["payload"]["source"] == "pytest"
+    # Agent output validation
+    assert "agent_result" in data
+    assert data["agent_result"]["decision"] == "approved"
