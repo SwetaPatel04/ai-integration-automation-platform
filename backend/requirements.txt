@@ -1,2 +1,4 @@
 # Flask is used to build the backend REST API
 flask
+requests
+pytest
