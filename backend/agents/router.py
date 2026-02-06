@@ -1,29 +1,23 @@
 from agents.decision_agent import DecisionAgent
+from agents.health_agent import HealthAgent
 
 
 class AgentRouter:
-    """
-    Routes incoming payloads to the appropriate agent.
-    """
-
     def __init__(self):
-        # Register agents here
         self.decision_agent = DecisionAgent()
+        self.health_agent = HealthAgent()
 
-    def route(self, payload: dict) -> dict:
-        """
-        Decide which agent should process the payload.
-        """
+    def route(self, payload):
+        trigger = payload.get("trigger")
 
-        trigger = payload.get("trigger", "").lower()
-
-        # Simple routing rule
-        if trigger:
+        if trigger == "webhook-test":
             return self.decision_agent.process(payload)
 
-        # Default fallback
+        if trigger == "health-check":
+            return self.health_agent.process(payload)
+
         return {
-            "agent": "None",
-            "decision": "no-agent-selected",
-            "input": payload
+            "agent": "RouterFallback",
+            "message": "No matching agent found",
+            "payload": payload
         }
