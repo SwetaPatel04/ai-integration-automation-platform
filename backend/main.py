@@ -9,6 +9,7 @@ from datetime import datetime
 
 # Import agent
 from agents.decision_agent import DecisionAgent
+from agents.router import AgentRouter
 
 
 def create_app():
@@ -19,7 +20,7 @@ def create_app():
     app = Flask(__name__)
 
     # Initialize agent once (singleton pattern)
-    decision_agent = DecisionAgent()
+    router = AgentRouter()
 
     # -------------------------------
     # HOME ENDPOINT
@@ -77,7 +78,7 @@ def create_app():
         payload = request.get_json(silent=True) or {}
 
         # Agent processes the payload
-        agent_result = decision_agent.process(payload)
+        agent_result = router.route(payload)
 
         event_log = {
             "received_at": datetime.utcnow().isoformat(),
