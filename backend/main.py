@@ -1,93 +1,67 @@
-# Import Flask class to create the web application
-from flask import Flask, jsonify
+# Import Flask utilities
+from flask import Flask, jsonify, request
 
-# Import requests library to call external APIs manually
+# External API requests
 import requests
+
+# Time logging
+from datetime import datetime
+
+# Environment variables
+import os
 
 
 def create_app():
     """
-    This function creates and configures the Flask application.
-    Using a factory function is a best practice for scalability.
+    Factory function to create Flask application.
     """
-    
-    # Create a Flask app instance
+
     app = Flask(__name__)
 
-    # -------------------------------
-    # HEALTH CHECK ENDPOINT
-    # -------------------------------
+    # Read environment variables with defaults
+    APP_NAME = os.getenv("APP_NAME", "AI Integration Automation Platform")
+    ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+
+    @app.route("/", methods=["GET"])
+    def home():
+        return f"{APP_NAME} running in {ENVIRONMENT} mode"
+
     @app.route("/health", methods=["GET"])
     def health_check():
-        """
-        This endpoint is used to check if the backend service is running.
-        It is commonly used by monitoring tools.
-        """
         return jsonify({
             "status": "OK",
-            "message": "AI Integration Automation Platform is running"
+            "app": APP_NAME,
+            "environment": ENVIRONMENT
         })
 
-    # -------------------------------
-    # MANUAL EXTERNAL API INTEGRATION
-    # -------------------------------
     @app.route("/external-post", methods=["GET"])
     def get_external_post():
-        """
-        This endpoint manually calls an external public API.
-        This demonstrates real backend integration skills.
-        """
-
-        # URL of the external API (public, no authentication required)
         external_api_url = "https://jsonplaceholder.typicode.com/posts/1"
+        response = requests.get(external_api_url, timeout=5)
+        return jsonify(response.json())
 
-        try:
-            # Send GET request to the external API
-            response = requests.get(
-                external_api_url,
-                timeout=5  # Prevents hanging if API is slow/unavailable
-            )
+    @app.route("/webhook/external-trigger", methods=["POST"])
+    def webhook_external_trigger():
+        payload = request.get_json(silent=True) or {}
+        event_log = {
+            "received_at": datetime.utcnow().isoformat(),
+            "payload": payload
+        }
 
-            # Raise exception if HTTP status code is 4xx or 5xx
-            response.raise_for_status()
+        response = requests.get(
+            "https://jsonplaceholder.typicode.com/posts/1",
+            timeout=5
+        )
 
-            # Convert JSON response into Python dictionary
-            data = response.json()
+        return jsonify({
+            "automation": "webhook-triggered",
+            "event_log": event_log,
+            "external_data": response.json()
+        })
 
-            # Return structured response to the client
-            return jsonify({
-                "source": "jsonplaceholder",
-                "success": True,
-                "data": data
-            })
-
-        except requests.exceptions.Timeout:
-            # Handles API timeout error
-            return jsonify({
-                "success": False,
-                "error": "External API request timed out"
-            }), 504
-
-        except requests.exceptions.RequestException as e:
-            # Handles all other request-related errors
-            return jsonify({
-                "success": False,
-                "error": str(e)
-            }), 500
-
-    # Return the configured Flask app
     return app
 
-    @app.route("/")
-    def home():
-        return "Backend is running"
 
-# -------------------------------
-# APPLICATION ENTRY POINT
-# -------------------------------
 if __name__ == "__main__":
-    # Create the Flask app using the factory function
     app = create_app()
-    print(app.url_map)
-    # Run the Flask development server
     app.run(debug=True)
