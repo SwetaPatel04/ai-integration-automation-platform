@@ -7,9 +7,14 @@ import requests
 # Timestamp handling
 from datetime import datetime
 
-# Import agent
+# Import agents
 from agents.decision_agent import DecisionAgent
+from agents.action_agent import ActionAgent
 from agents.router import AgentRouter
+from agents.audit_agent import AuditAgent
+from agents.action_agent import ActionAgent
+from agents.agent_chain import AgentChain
+from agents.retry import AgentRetry
 
 
 def create_app():
@@ -19,8 +24,13 @@ def create_app():
 
     app = Flask(__name__)
 
-    # Initialize agent once (singleton pattern)
+    # Initialize agents (singletons)
+    decision_agent = DecisionAgent()
+    action_agent = ActionAgent()
+    audit_agent = AuditAgent()
     router = AgentRouter()
+    agent_chain = AgentChain()
+    retry = AgentRetry()
 
     # -------------------------------
     # HOME ENDPOINT
@@ -41,55 +51,16 @@ def create_app():
         })
 
     # -------------------------------
-    # MANUAL EXTERNAL API INTEGRATION
-    # -------------------------------
-    @app.route("/external-post", methods=["GET"])
-    def get_external_post():
-        external_api_url = "https://jsonplaceholder.typicode.com/posts/1"
-
-        try:
-            response = requests.get(external_api_url, timeout=5)
-            response.raise_for_status()
-
-            return jsonify({
-                "source": "jsonplaceholder",
-                "success": True,
-                "data": response.json()
-            })
-
-        except requests.exceptions.RequestException as e:
-            return jsonify({
-                "success": False,
-                "error": str(e)
-            }), 500
-
-    # -------------------------------
-    # WEBHOOK + AGENT INTEGRATION
+    # WEBHOOK + AGENT CHAIN
     # -------------------------------
     @app.route("/webhook/external-trigger", methods=["POST"])
     def webhook_external_trigger():
-        """
-        Webhook endpoint that:
-        - Receives payload
-        - Sends payload to agent
-        - Returns agent decision + metadata
-        """
-
         payload = request.get_json(silent=True) or {}
 
-        # Agent processes the payload
-        agent_result = router.route(payload)
+        decision_result = retry.run(decision_agent.process, payload)
 
-        event_log = {
-            "received_at": datetime.utcnow().isoformat(),
-            "payload": payload
-        }
+        return jsonify(decision_result)
 
-        return jsonify({
-            "automation": "agent-driven-webhook",
-            "event_log": event_log,
-            "agent_result": agent_result
-        })
 
     return app
 

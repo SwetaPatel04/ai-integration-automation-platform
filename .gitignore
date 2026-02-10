@@ -1,1 +1,10 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Agent runtime files
+backend/agent_logs.json
+backend/agent_memory.json
+
+# Environment files
 backend/.env

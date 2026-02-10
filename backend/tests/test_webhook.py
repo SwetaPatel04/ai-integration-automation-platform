@@ -42,5 +42,8 @@ def test_webhook_external_trigger(client):
     assert data["automation"] == "agent-driven-webhook"
 
     # Agent output validation
-    assert "agent_result" in data
-    assert data["agent_result"]["decision"] == "approved"
+    assert "decision_result" in data
+    assert "action_result" in data
+
+    assert data["decision_result"]["decision"] == "notify"
+    assert data["action_result"]["action_taken"] == "Notification sent"

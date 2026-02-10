@@ -1,24 +1,32 @@
-from agents.base_agent import BaseAgent
+from utils.agent_memory import load_memory, remember_event
 
 
-class DecisionAgent(BaseAgent):
-    """
-    A simple rule-based decision agent.
-    This will later evolve into an AI-powered agent.
-    """
-
-    def process(self, payload: dict) -> dict:
-        """
-        Processes incoming payload and returns a decision.
-        """
-
-        trigger = payload.get("trigger", "").lower()
-
-        if trigger == "webhook-test":
-            decision = "approved"
+class DecisionAgent:
+    def process(self, payload):
+        # 🧪 TEMPORARY TEST - REMOVE AFTER TESTING RETRY LOGIC
+        # raise Exception("Simulated failure")
+        
+        trigger = payload.get("trigger")
+        
+        # 🧠 CHECK MEMORY: Have I seen this trigger before?
+        memory = load_memory()
+        previous_triggers = [m.get("trigger") for m in memory if "trigger" in m]
+        
+        # 🚦 SMART DECISION LOGIC
+        if trigger in previous_triggers:
+            # Already handled this before → ignore duplicate
+            decision = "ignore"
+        elif trigger == "webhook-test":
+            decision = "notify"
+        elif trigger == "health-check":
+            decision = "store"
         else:
-            decision = "review"
+            decision = "ignore"
 
+        
+        # 💾 REMEMBER THIS EVENT
+        remember_event(payload)
+        
         return {
             "agent": "DecisionAgent",
             "decision": decision,
